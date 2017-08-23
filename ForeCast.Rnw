@@ -13,6 +13,7 @@
 \usepackage{enumitem} % Laat enumerate werken met letters
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{amsmath}
 
 \DeclareGraphicsExtensions{.pdf,.png,.jpg}
 
@@ -47,6 +48,8 @@ library(gridExtra)
 @
 
 \section{Forecasting methods}
+
+\url{https://grisha.org/blog/2016/01/29/triple-exponential-smoothing-forecasting/}
 
 \subsection{Start series}
 <<label=basis,fig=TRUE,include=FALSE, echo=TRUE>>=
@@ -154,6 +157,102 @@ ggplot(data=serie.wma,aes(x=x)) + geom_point(aes(y=y),colour="black") + geom_poi
 \includegraphics[width=0.5\textwidth]{ForeCast-wma}
 \captionof{figure}{Weighted Moving Average (n=4) (w=(0.1 0.2 0.3 0.4))}
 \label{fig:wma}
+\end{center}
+
+\section{Exponential smoothing}
+
+\subsection{Single exponential smoothing}
+
+You use all former datapoints with a steadily decreasing weight: e.g. 
+
+weighing vector=$\left[  0.9 \quad 0.9^{2} \quad 0.9^{3} \ldots \right]$
+
+However the sum of all the weight should be 1. This is not the case. Poisson, Holt and Roberts found a solution by calculating the expected value in a recursive way:
+
+$ \hat{y}_{i} = \alpha y_{i} + \left( 1-\alpha \right)\hat{y}_{i-1} $
+
+$\alpha$ is the importance that is given to the present observed value. High values of $\alpha$ mean that the influence of former data points fades quickly. $\alpha$ is called the ''smoothing force" or ''smoothing coefficient" but a better name would be ''memory decay rate".
+
+<<label=ses,fig=TRUE,include=FALSE, echo=TRUE>>=
+serie.ses <- serie
+serie.ses[nrow(serie.ses)+1,] <- c(nrow(serie.ses)+1,NA)
+for (k in c(1:2)) {
+if (k==1) {
+  alpha <- 0.1
+  serie.ses$yhat01 <- NA
+  serie.ses$yhat01[1] <- serie.ses$y[1]
+  for (i in (2:nrow(serie.ses))) {
+    serie.ses$yhat01[i] <- alpha*serie.ses$y[i]+(1-alpha)*serie.ses$yhat01[i-1]
+    }
+  } else {
+  alpha <- 0.9
+  serie.ses$yhat09 <- NA
+  serie.ses$yhat09[1] <- serie.ses$y[1]
+  for (i in (2:nrow(serie.ses))) {
+    serie.ses$yhat09[i] <- alpha*serie.ses$y[i]+(1-alpha)*serie.ses$yhat09[i-1]
+    }
+  }
+} 
+ggplot(data=serie.ses,aes(x=x)) + 
+  geom_point(aes(y=y),colour="black") + 
+  geom_point(aes(y=yhat01),colour="green") +
+  geom_point(aes(y=yhat09),colour="red")
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-ses}
+\captionof{figure}{Single Exponential Smoothing (alpha=0.1 green, alpha=0.9 red)}
+\label{fig:ses}
+\end{center}
+
+\subsection{Double Exponential Smoothing}
+
+In the naive method we equated the next expected value to the present observed value:\\
+
+$ \hat{y}_{i}=y_{i-1} $\\
+
+We can improve on that by using the slope (trend) in the datapoints.
+
+If the slope is $ b_{i}=y_{i}-y_{i-1} $ then a better estimate of the next expected value could be\\
+
+$ \hat{y}_{i}=y_{i-1} + b_{i} $
+
+Instead of working with the observed values $y_{i}$ we work with calculated values, called levels, $l_{i}$. Both the levels and the slopes (so ''Double") can be ''exponentialy smoothed":
+
+\begin{align}
+l_{i}&=\alpha y_{i}+\left( 1-\alpha  \right) \left( l_{i-1}+b_{i-1}  \right) \\
+b_{i}&=\beta \left( l_{i} - l_{i-1} \right) + \left( 1-\beta  \right)b_{i-1} \\
+\hat{y}_{i+1}&=l_{i}+b_{i}
+\end{align}
+
+<<label=des,fig=TRUE,include=FALSE, echo=TRUE>>=
+serie.des <- serie
+serie.des[nrow(serie.des)+1,] <- c(nrow(serie.des)+1,NA)
+alpha <- 0.9
+beta <- 0.9
+serie.des$level <- serie.des$y
+serie.des$slope <- 0
+serie.des$yhat <- NA
+serie.des$yhat[1] <- serie.des$y[1]
+for (i in (2:nrow(serie.des))) {
+  if (i==2) {
+    serie.des$level[i] <- serie.des$y[i-1]
+    serie.des$slope[i] <- serie.des$y[i]-serie.des$y[i-1]
+  } else {
+    serie.des$level[i] <- alpha*serie.des$y[i] + (1-alpha)*(serie.des$level[i-1] + serie.des$slope[i-1])
+    serie.des$slope[i] <- beta*(serie.des$level[i] - serie.des$level[i-1]) + (1-beta)*serie.des$slope[i-1]
+  }
+  serie.des$yhat[i] <- serie.des$level[i] + serie.des$slope[i]
+}
+ggplot(data=serie.des,aes(x=x)) + 
+  geom_point(aes(y=y),colour="black") + 
+  geom_point(aes(y=yhat),colour="red")
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-des}
+\captionof{figure}{Double Exponential Smoothing (alpha=0.9, beta=0.9)}
+\label{fig:des}
 \end{center}
 
 \end{document}
