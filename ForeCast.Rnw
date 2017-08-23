@@ -46,6 +46,114 @@ library(lubridate)
 library(gridExtra)
 @
 
+\section{Forecasting methods}
 
+\subsection{Start series}
+<<label=basis,fig=TRUE,include=FALSE, echo=TRUE>>=
+x <- c(1:7)
+series.1 <- c(3, 10, 12, 13, 12, 10, 12)
+serie <- data.frame(x=x,y=series.1)
+ggplot(data=serie) + geom_point(aes(x=x, y=y))
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-basis}
+\captionof{figure}{start series}
+\label{fig:basis}
+\end{center}
+
+\subsection{Naive method}
+
+$ \hat{y}_{i} = y_{i-1} $
+
+<<label=naive,fig=TRUE,include=FALSE, echo=TRUE>>=
+serie.naive <- serie
+serie.naive[nrow(serie.naive)+1,] <- c(nrow(serie.naive)+1,0)
+serie.naive$yhat <- NA
+for (i in (2:nrow(serie.naive))) {
+  serie.naive$yhat[i] <- serie.naive$y[i-1]
+}
+ggplot(data=serie.naive,aes(x=x)) + geom_point(aes(y=y),colour="black") + geom_point(aes(y=yhat),colour="red")
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-naive}
+\captionof{figure}{Naive}
+\label{fig:naive}
+\end{center}
+
+\subsection{Simple average}
+
+$ \hat{y}_{i} = \frac{1}{i-1}\sum_{j=1}^{j=i-1}y_{j} $
+
+<<label=sa,fig=TRUE,include=FALSE, echo=TRUE>>=
+serie.sa <- serie
+serie.sa[nrow(serie.sa)+1,] <- c(nrow(serie.sa)+1,NA)
+serie.sa$cumsum <- cumsum(serie.sa$y)
+for (i in (2:nrow(serie.sa))) {
+  serie.sa$yhat[i] <- serie.sa$cumsum[i-1]/serie.sa$x[i-1]
+}
+ggplot(data=serie.sa,aes(x=x)) + geom_point(aes(y=y),colour="black") + geom_point(aes(y=yhat),colour="red")
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-sa}
+\captionof{figure}{Simple average}
+\label{fig:sa}
+\end{center}
+
+\subsection{Moving average with size n}
+
+n=3
+
+$ \hat{y}_{i} = \frac{1}{n}\sum_{j=i-n}^{j=i-1}y_{j} $
+
+<<label=ma,fig=TRUE,include=FALSE, echo=TRUE>>=
+n <- 3
+serie.ma <- serie
+serie.ma[nrow(serie.ma)+1,] <- c(nrow(serie.ma)+1,NA)
+for (i in ((n+1):nrow(serie.ma))) {
+  som <- 0
+  for (j in (1:n)) {
+    som <- som + serie.ma$y[i-j]
+  } 
+  serie.ma$yhat[i] <- som/n
+}
+ggplot(data=serie.ma,aes(x=x)) + geom_point(aes(y=y),colour="black") + geom_point(aes(y=yhat),colour="red")
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-ma}
+\captionof{figure}{Moving average (n=3)}
+\label{fig:ma}
+\end{center}
+
+\subsection{Weighted Moving average with size n and weighing vector}
+
+n=4
+Weighing vector = [0.1 0.2 0.3 0.4] with $\sum_{k=1}^{k=n}w_{k}=1 $
+
+$ \hat{y}_{i} = \sum_{j=1}^{j=n}y_{i-j}*w_{n-j} $
+
+<<label=wma,fig=TRUE,include=FALSE, echo=TRUE>>=
+n <- 4
+w <- c(0.1, 0.2, 0.3, 0.4)
+serie.wma <- serie
+serie.wma[nrow(serie.wma)+1,] <- c(nrow(serie.wma)+1,NA)
+serie.wma$yhat <- NA
+for (i in ((n+1):nrow(serie.wma))) {
+  serie.wma$yhat[i] <- 0
+  for (j in (1:n)) {
+    serie.wma$yhat[i] <- serie.wma$yhat[i] + serie.wma$y[i-j]*w[n-j+1]
+  } 
+}
+ggplot(data=serie.wma,aes(x=x)) + geom_point(aes(y=y),colour="black") + geom_point(aes(y=yhat),colour="red")
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-wma}
+\captionof{figure}{Weighted Moving Average (n=4) (w=(0.1 0.2 0.3 0.4))}
+\label{fig:wma}
+\end{center}
 
 \end{document}
