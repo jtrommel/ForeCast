@@ -265,4 +265,16 @@ ggplot(data=serie.des,aes(x=x)) +
 \label{fig:des}
 \end{center}
 
+Not the same results as Trubetskoy (?)
+
+\subsection{Triple Exponential Smoothing}
+
+Terminology:
+\begin{itemize}
+  \item Season: if a series appears to be repetitive at regular intervals, it is called \emph{seasonal}. \textbf{Seasonality is a precondition for the use of Holt-Winters!}
+  \item Season length: L = number of data points after which a new season starts
+  \item Seasonal component: an aditional deviation from level + trend. There is a seasonal component for every point in a season.
+\end{itemize}
+
+Triple exponential smoothing applies an exponential smoothing to the seasonal components in addition to level and trend. The smoothing is applied across seasons e.g. the seasonal component of the third point into the season will be exponentialy smoothed with the third point of last season, the third component of two seasons ago etc.
 \end{document}
