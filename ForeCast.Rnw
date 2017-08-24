@@ -238,9 +238,9 @@ serie.des$slope[1] <- 0
 serie.des$yhat[1] <- serie.des$y[1]
 for (i in (2:nrow(serie.des))) {
   if (i==2) {
-    serie.des$level[i] <- serie.des$y[i-1]
-    serie.des$slope[i] <- serie.des$y[i]-serie.des$y[i-1]
-  }
+    new.level <- serie.des$y[i]
+    new.slope <- serie.des$y[i]-serie.des$y[i-1]
+  } else {
   if (i >= nrow(serie.des)) {
     yvalue <- serie.des$yhat[i-1]
   } else {
@@ -250,6 +250,7 @@ for (i in (2:nrow(serie.des))) {
   last.slope <- serie.des$slope[i-1]
   new.level <- alpha*yvalue + (1 - alpha)*(last.level + last.slope)
   new.slope <- beta*(new.level - last.level) + (1 - beta)*last.slope
+  }
   serie.des$yhat[i] <- new.level + new.slope
   serie.des$level[i] <- new.level
   serie.des$slope[i] <- new.slope
@@ -265,7 +266,13 @@ ggplot(data=serie.des,aes(x=x)) +
 \label{fig:des}
 \end{center}
 
-Not the same results as Trubetskoy (?)
+Same results as Trubetskoy and when you use the HoltWinters function maar verschoven in de tijd.
+
+<<>>=
+serie.des$HW <- serie.des$y
+fit <- HoltWinters(serie$y, alpha=0.9, beta=0.9, gamma=FALSE)
+serie.des$HW[3:7] <- as.data.frame(fit$fitted)[,1]
+@
 
 \subsection{Triple Exponential Smoothing}
 
