@@ -230,19 +230,29 @@ serie.des <- serie
 serie.des[nrow(serie.des)+1,] <- c(nrow(serie.des)+1,NA)
 alpha <- 0.9
 beta <- 0.9
-serie.des$level <- serie.des$y
-serie.des$slope <- 0
+serie.des$level <- NA
+serie.des$slope <- NA
 serie.des$yhat <- NA
+serie.des$level[1] <- serie.des$y[1]
+serie.des$slope[1] <- 0
 serie.des$yhat[1] <- serie.des$y[1]
 for (i in (2:nrow(serie.des))) {
   if (i==2) {
     serie.des$level[i] <- serie.des$y[i-1]
     serie.des$slope[i] <- serie.des$y[i]-serie.des$y[i-1]
-  } else {
-    serie.des$level[i] <- alpha*serie.des$y[i] + (1-alpha)*(serie.des$level[i-1] + serie.des$slope[i-1])
-    serie.des$slope[i] <- beta*(serie.des$level[i] - serie.des$level[i-1]) + (1-beta)*serie.des$slope[i-1]
   }
-  serie.des$yhat[i] <- serie.des$level[i] + serie.des$slope[i]
+  if (i >= nrow(serie.des)) {
+    yvalue <- serie.des$yhat[i-1]
+  } else {
+    yvalue <- serie.des$y[i]
+  }
+  last.level <- serie.des$level[i-1]
+  last.slope <- serie.des$slope[i-1]
+  new.level <- alpha*yvalue + (1 - alpha)*(last.level + last.slope)
+  new.slope <- beta*(new.level - last.level) + (1 - beta)*last.slope
+  serie.des$yhat[i] <- new.level + new.slope
+  serie.des$level[i] <- new.level
+  serie.des$slope[i] <- new.slope
 }
 ggplot(data=serie.des,aes(x=x)) + 
   geom_point(aes(y=y),colour="black") + 
