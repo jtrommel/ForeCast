@@ -45,6 +45,7 @@
 library(tidyverse)
 library(lubridate)
 library(gridExtra)
+library(forecast)
 @
 
 \section{Forecasting methods}
@@ -205,6 +206,14 @@ ggplot(data=serie.ses,aes(x=x)) +
 \label{fig:ses}
 \end{center}
 
+Single exponential smoothing using the HoltWinters function give the same results except for the fact that it only gives predictions for (n-1) data points. No result for the last point 
+
+<<>>=
+serie.ses$HW <- NA
+fit <- HoltWinters(serie$y, alpha=0.9, beta=FALSE, gamma=FALSE)
+serie.ses$HW[1:6] <- as.data.frame(fit$fitted)[,1]
+@
+
 \subsection{Double Exponential Smoothing}
 
 In the naive method we equated the next expected value to the present observed value:\\
@@ -266,10 +275,10 @@ ggplot(data=serie.des,aes(x=x)) +
 \label{fig:des}
 \end{center}
 
-Same results as Trubetskoy and when you use the HoltWinters function maar verschoven in de tijd.
+Same results as Trubetskoy! But when I use the HoltWinters function I get the same results but shifted in time (+1):
 
 <<>>=
-serie.des$HW <- serie.des$y
+serie.des$HW <- NA
 fit <- HoltWinters(serie$y, alpha=0.9, beta=0.9, gamma=FALSE)
 serie.des$HW[3:7] <- as.data.frame(fit$fitted)[,1]
 @
@@ -284,4 +293,73 @@ Terminology:
 \end{itemize}
 
 Triple exponential smoothing applies an exponential smoothing to the seasonal components in addition to level and trend. The smoothing is applied across seasons e.g. the seasonal component of the third point into the season will be exponentialy smoothed with the third point of last season, the third component of two seasons ago etc.
+
+\begin{align}
+l_{i}&=\alpha \left(y_{i} - s_{i-L}  \right)+\left( 1-\alpha  \right) \left( l_{i-1}+b_{i-1}  \right) \\
+b_{i}&=\beta \left( l_{i} - l_{i-1} \right) + \left( 1-\beta  \right)b_{i-1} \\
+s_{i}&=\gamma \left( y_{i} - l_{i}  \right) + \left( 1 - \gamma  \right)s_{i-L} \\
+\hat{y}_{i+m}&=l_{i} + m b_{i} +s_{i - L + 1 +\left(  m - 1 \right)modL}
+\end{align}
+
+Instead of trying to program this myself lets get better acquainted with the HoltWinters function. Trubetskoy uses a new data set with seasonality:
+
+<<label=tes1,fig=TRUE,include=FALSE, echo=TRUE>>=
+series.2 <- c(30, 21, 29, 31, 40, 48, 53, 47, 37, 39, 31, 29, 17,
+              9, 20, 24, 27, 35, 41, 38, 27, 31, 27, 26, 21, 13, 
+              21, 18, 33, 35, 40, 36, 22, 24, 21, 20, 17, 14, 17,
+              19, 26, 29, 40, 31, 20, 24, 18, 26, 17, 9, 17, 21,
+              28, 32, 46, 33, 23, 28, 22, 27, 18, 8, 17, 21, 31,
+              34, 44, 38, 31, 30, 26, 32)
+x.2 <- c(1:length(series.2))
+serie2 <- data.frame(x=x.2,y=series.2)
+ggplot(data=serie2, aes(x=x)) + geom_point(aes(y=y), colour="red") + geom_line(aes(y=y))
+@
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{ForeCast-tes1}
+\captionof{figure}{Triple Exponential Smoothing: starting data}
+\label{fig:tes1}
+\end{center}
+
+Now we use HoltWinters. The parameters are:
+
+\begin{itemize}
+  \item a time series with observed values (series.2.ts)
+  \item alpha ($\alpha$=0.716 - the same value as Trubetskoy)
+  \item beta ($\beta$=0.029 - the same value as Trubetskoy)
+  \item gamma ($\gamma$=0.993 - the same value as Trubetskoy)
+  \item number of points to forecast (24 - the same value as Trubetskoy)
+\end{itemize}
+
+<<label=tes2,fig=TRUE,include=FALSE, echo=TRUE>>=
+series.2.ts <- ts(series.2, frequency = 12)
+fit1 <- HoltWinters(series.2.ts, alpha=0.716, beta=0.029, gamma=0.993)
+fc1 <- forecast(fit1,4)
+plot(fc1)
+param1 <- data.frame(alfa=fc1[[2]][3], beta=fc1[[2]][4], gamma=fc1[[2]][5])
+param1
+@
+
+\begin{center}
+\includegraphics[width=0.7\textwidth]{ForeCast-tes2}
+\captionof{figure}{Triple Exponential Smoothing: forecast}
+\label{fig:tes2}
+\end{center}
+
+When we let HoltWinters opitmize $\alpha$, $\beta$ and $\gamma$ we get about the same values:
+
+<<label=tes3,fig=TRUE,include=FALSE, echo=TRUE>>=
+fit2 <- HoltWinters(series.2.ts)
+fc2 <- forecast(fit2,4)
+plot(fc2)
+param2 <- data.frame(alfa=fc2[[2]][3], beta=fc2[[2]][4], gamma=fc2[[2]][5])
+param2
+@
+
+\begin{center}
+\includegraphics[width=0.7\textwidth]{ForeCast-tes3}
+\captionof{figure}{Triple Exponential Smoothing: forecast with HW optimising}
+\label{fig:tes3}
+\end{center}
+
 \end{document}
