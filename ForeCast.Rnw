@@ -301,7 +301,7 @@ s_{i}&=\gamma \left( y_{i} - l_{i}  \right) + \left( 1 - \gamma  \right)s_{i-L} 
 \hat{y}_{i+m}&=l_{i} + m b_{i} +s_{i - L + 1 +\left(  m - 1 \right)modL}
 \end{align}
 
-Instead of trying to program this myself lets get better acquainted with the HoltWinters function. Trubetskoy uses a new data set with seasonality:
+Instead of trying to program this myself let's get better acquainted with the HoltWinters function. Trubetskoy uses a new data set with seasonality:
 
 <<label=tes1,fig=TRUE,include=FALSE, echo=TRUE>>=
 series.2 <- c(30, 21, 29, 31, 40, 48, 53, 47, 37, 39, 31, 29, 17,
@@ -336,7 +336,9 @@ series.2.ts <- ts(series.2, frequency = 12)
 fit1 <- HoltWinters(series.2.ts, alpha=0.716, beta=0.029, gamma=0.993)
 fc1 <- forecast(fit1,4)
 plot(fc1)
-param1 <- data.frame(alfa=fc1[[2]][3], beta=fc1[[2]][4], gamma=fc1[[2]][5])
+param1 <- data.frame(alfa=fc1[["model"]]["alpha"], 
+                     beta=fc1[["model"]]["beta"], 
+                     gamma=fc1[["model"]]["gamma"])
 param1
 @
 
@@ -346,13 +348,15 @@ param1
 \label{fig:tes2}
 \end{center}
 
-When we let HoltWinters opitmize $\alpha$, $\beta$ and $\gamma$ we get about the same values:
+When we let HoltWinters optimize $\alpha$, $\beta$ and $\gamma$ we get about the same values:
 
 <<label=tes3,fig=TRUE,include=FALSE, echo=TRUE>>=
 fit2 <- HoltWinters(series.2.ts)
 fc2 <- forecast(fit2,4)
 plot(fc2)
-param2 <- data.frame(alfa=fc2[[2]][3], beta=fc2[[2]][4], gamma=fc2[[2]][5])
+param2 <- data.frame(alfa=fc2[["model"]]["alpha"], 
+                     beta=fc2[["model"]]["beta"], 
+                     gamma=fc2[["model"]]["gamma"])
 param2
 @
 
@@ -361,5 +365,11 @@ param2
 \captionof{figure}{Triple Exponential Smoothing: forecast with HW optimising}
 \label{fig:tes3}
 \end{center}
+
+\section{Conclusions}
+
+The methods used for forecasting have grown ''naturally" from a naive prediction, to averaging methods, of which HoltWinters is an advanced example. HoltWinters takes into account level, slope and seasonality (periodicity). Level (controlled by $\alpha$) and slope (controlled by $\beta$) are adjustable and therefor more complex than a linear regression through all data points. Seasonality allows for periodicity in the signal and is controlled by $\gamma$. If no values for $\alpha$, $\beta$ and $\gamma$ are given, HoltWinters will find those values that minimize an error function.
+
+It seems that if seasonality is present, it is very important to turn your data vection into a times series objects and give the frequency yourself.
 
 \end{document}
